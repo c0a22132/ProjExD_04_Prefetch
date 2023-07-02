@@ -2,8 +2,10 @@ import math
 import random
 import sys
 import time
+from typing import Any
 
 import pygame as pg
+from pygame.sprite import AbstractGroup
 
 
 WIDTH = 1600  # ゲームウィンドウの幅
@@ -291,6 +293,22 @@ class Gravity(pg.sprite.Sprite):
             self.kill()
 
 
+class NeoGravity(pg.sprite.Sprite):
+    def __init__(self, life: int):
+        super().__init__()
+        self.image = pg.Surface((WIDTH, HEIGHT))
+        pg.draw.rect(self.image, (10, 10, 10), pg.Rect(0, 0, WIDTH, HEIGHT))
+        self.image.set_colorkey((0, 0, 0))
+        self.image.set_alpha(200)
+        self.life = life
+        self.rect = self.image.get_rect()
+
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
+
+
 class Shield(pg.sprite.Sprite):
     """
     防御シールドに関するクラス
@@ -364,6 +382,7 @@ def main():
     emys = pg.sprite.Group()  # 敵機グループ
     shields = pg.sprite.Group()  # 防御シールドグループ
     gras = pg.sprite.Group()  # 重力球グループ
+    neogras = pg.sprite.Group()  # 新重力球グループ
 
     tmr = 0
     clock = pg.time.Clock()
@@ -383,10 +402,14 @@ def main():
                 bird.speed = 20  # 高速化時speed：20
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE and key_lst[pg.K_LSHIFT]:
                 beams.add(NeoBeam(bird, 5).gen_beams())
-            if event.type == pg.KEYDOWN and event.key == pg.K_TAB:
-                if score.score >= 50:
-                    score.score_up(-50)
-                    gras.add(Gravity(bird,200,500))
+            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN: 
+                if score.score >= 200:
+                    score.score_up(-200)
+                    neogras.add(NeoGravity(400))
+            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN:
+                if score.score >= 100:
+                    score.score_up(-100)
+                    bird.change_state("hyper",500)
             if event.type == pg.KEYDOWN and event.key == pg.K_LSHIFT:
                 if score.score >= 100:
                     bird.change_state("hyper",500)
@@ -432,6 +455,14 @@ def main():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
 
+        for bomb in pg.sprite.groupcollide(bombs, neogras, True, False).keys():
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.score_up(1)  # 1点アップ
+
+        for bomb in pg.sprite.groupcollide(emys, neogras, True, False).keys():
+            exps.add(Explosion(bomb, 100))  # 爆発エフェクト
+            score.score_up(10)  # 1点アップ
+
         bird.update(key_lst, screen)
         beams.update()
         beams.draw(screen)
@@ -443,6 +474,8 @@ def main():
         exps.draw(screen)
         gras.update()
         gras.draw(screen)
+        neogras.update()
+        neogras.draw(screen)
         shields.update()  # 防御シールドのアップデート
         shields.draw(screen)  # 防御シールドを描画
         score.update(screen)
