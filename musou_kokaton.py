@@ -232,12 +232,20 @@ class Shield(pg.sprite.Sprite):
     防御シールドに関するクラス
     """
     def __init__(self, bird: Bird, life: int):
+        """
+        防御シールドを生成する
+        引数1 bird：防御シールドを発動するこうかとん
+        引数2 life：防御シールドの発動時間
+        """
         super().__init__()
-        self.image = pg.Surface((20, bird.rect.height*2))  # 空のSurfaceを生成
-        pg.draw.rect(self.image, (0, 0, 0), pg.Rect(0, 0, 20, bird.rect.height*2))
+        self.yoko, self.tate = bird.get_direction()
+        self.image = pg.transform.rotozoom(
+            pg.Surface((20, bird.rect.height * 2)), 0, 1.0
+        )
+        pg.draw.rect(self.image, (0, 0, 0), pg.Rect(0, 0, 20, bird.rect.height * 2))
         self.rect = self.image.get_rect()
-        self.rect.centerx = bird.rect.centerx+50
-        self.rect.centery = bird.rect.centery
+        self.rect.centerx = bird.rect.centerx + bird.rect.width * self.yoko
+        self.rect.centery = bird.rect.centery + bird.rect.height * self.tate
         self.life = life
         
     def update(self):
