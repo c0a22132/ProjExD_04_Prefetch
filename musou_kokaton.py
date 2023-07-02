@@ -161,14 +161,14 @@ class Beam(pg.sprite.Sprite):
     """
     ビームに関するクラス
     """
-    def __init__(self, bird: Bird):
+    def __init__(self, bird: Bird, angle0: float = 0.0):
         """
         ビーム画像Surfaceを生成する
         引数 bird：ビームを放つこうかとん
         """
         super().__init__()
         self.vx, self.vy = bird.get_direction()
-        angle = math.degrees(math.atan2(-self.vy, self.vx))
+        angle = math.degrees(math.atan2(-self.vy, self.vx))+angle0
         self.image = pg.transform.rotozoom(pg.image.load(f"ex04/fig/beam.png"), angle, 2.0)
         self.vx = math.cos(math.radians(angle))
         self.vy = -math.sin(math.radians(angle))
@@ -186,6 +186,24 @@ class Beam(pg.sprite.Sprite):
         if check_bound(self.rect) != (True, True):
             self.kill()
 
+class NeoBeam(pg.sprite.Sprite):
+    """
+    複数のビームをまとめて管理するクラス
+    """
+    def __init__(self, bird: Bird, num: int): 
+        """
+        ビーム画像Surfaceを生成する
+        引数 bird：ビームを放つこうかとん
+        """
+        self.bird = bird
+        self.num = num
+        self.beams = list()
+    
+    def gen_beams(self):
+        for angle in range(-50, 51, int(100/(self.num-1))):
+            self.beams.append(Beam(self.bird, angle))
+        return self.beams
+    
 
 class Explosion(pg.sprite.Sprite):
     """
@@ -329,10 +347,13 @@ def main():
                 if score.score >= 50 and len(shields) == 0:  # スコアが50以上かつシールドがないとき
                     shields.add(Shield(bird, 400))  # CAPSLOCKキーが押されたら防御シールドを生成
                     score.score_up(-50)  # スコアを50減らす
-            if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT:
+            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE and key_lst[pg.K_LSHIFT]:
+                beams.add(NeoBeam(bird, 5).gen_beams())
+            if event.type == pg.KEYDOWN and event.key == pg.K_LSHIFT:
                 if score.score >= 100:
                     bird.change_state("hyper",500)
                     score.score_up(-100)
+            
 
         screen.blit(bg_img, [0, 0])
 
