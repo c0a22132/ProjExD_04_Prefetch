@@ -378,6 +378,9 @@ def main():
                 if score.score >= 50 and len(shields) == 0:  # スコアが50以上かつシールドがないとき
                     shields.add(Shield(bird, 400))  # CAPSLOCKキーが押されたら防御シールドを生成
                     score.score_up(-50)  # スコアを50減らす
+            # 追加機能１：高速化
+            if event.type == pg.KEYDOWN and event.key == pg.K_LSHIFT:  # 追加機能１：高速化
+                bird.speed = 20  # 高速化時speed：20
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE and key_lst[pg.K_LSHIFT]:
                 beams.add(NeoBeam(bird, 5).gen_beams())
             if event.type == pg.KEYDOWN and event.key == pg.K_TAB:
