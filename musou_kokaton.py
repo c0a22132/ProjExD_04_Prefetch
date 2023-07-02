@@ -260,6 +260,36 @@ class Enemy(pg.sprite.Sprite):
             self.state = "stop"
         self.rect.centery += self.vy
 
+class Gravity(pg.sprite.Sprite):
+    """
+    重力球に関するクラス
+    """
+
+    def __init__(self, bird: Bird, rad: int ,life: int):
+        """
+        重力球Surfaceを生成する
+        引数1 bird:重力球の中心となるこうかとん
+        引数2 rad:重力球の半径
+        引数3 life:発動時間
+        """
+        super().__init__()
+        self.image = pg.Surface((rad*2, rad*2))
+        pg.draw.circle(self.image, (10, 10, 10), (rad, rad), rad)
+        self.image.set_colorkey((0, 0, 0))
+        self.image.set_alpha(200)
+        self.rect = self.image.get_rect()
+        self.rect.centerx = bird.rect.centerx
+        self.rect.centery = bird.rect.centery+bird.rect.height/2
+        self.life = life
+
+    def update(self):
+        """
+        発動時間を1減算する
+        """
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
+
 
 class Shield(pg.sprite.Sprite):
     """
@@ -333,6 +363,7 @@ def main():
     exps = pg.sprite.Group()  # 爆発グループ
     emys = pg.sprite.Group()  # 敵機グループ
     shields = pg.sprite.Group()  # 防御シールドグループ
+    gras = pg.sprite.Group()  # 重力球グループ
 
     tmr = 0
     clock = pg.time.Clock()
@@ -349,6 +380,10 @@ def main():
                     score.score_up(-50)  # スコアを50減らす
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE and key_lst[pg.K_LSHIFT]:
                 beams.add(NeoBeam(bird, 5).gen_beams())
+            if event.type == pg.KEYDOWN and event.key == pg.K_TAB:
+                if score.score >= 50:
+                    score.score_up(-50)
+                    gras.add(Gravity(bird,200,500))
             if event.type == pg.KEYDOWN and event.key == pg.K_LSHIFT:
                 if score.score >= 100:
                     bird.change_state("hyper",500)
@@ -390,6 +425,10 @@ def main():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
 
+        for bomb in pg.sprite.groupcollide(bombs, gras, True, False).keys():
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.score_up(1)  # 1点アップ
+
         bird.update(key_lst, screen)
         beams.update()
         beams.draw(screen)
@@ -399,6 +438,8 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
+        gras.update()
+        gras.draw(screen)
         shields.update()  # 防御シールドのアップデート
         shields.draw(screen)  # 防御シールドを描画
         score.update(screen)
