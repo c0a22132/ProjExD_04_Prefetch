@@ -209,9 +209,9 @@ class Enemy(pg.sprite.Sprite):
         super().__init__()
         self.image = random.choice(__class__.imgs)
         self.rect = self.image.get_rect()
-        self.rect.center = random.randint(0, WIDTH), 0
+        self.rect.center = random.randint(0, WIDTH/2), 0
         self.vy = +6
-        self.bound = random.randint(50, HEIGHT/2)  # 停止位置
+        self.bound = random.randint(50, HEIGHT)  # 停止位置
         self.state = "down"  # 降下状態or停止状態
         self.interval = random.randint(50, 300)  # 爆弾投下インターバル
 
@@ -226,6 +226,36 @@ class Enemy(pg.sprite.Sprite):
             self.state = "stop"
         self.rect.centery += self.vy
 
+
+class Shield(pg.sprite.Sprite):
+    """
+    防御シールドに関するクラス
+    """
+    def __init__(self, bird: Bird, life: int):
+        super().__init__()
+        self.image = pg.Surface((20, bird.rect.height*2))  # 空のSurfaceを生成
+        pg.draw.rect(self.image, (0, 0, 0), pg.Rect(0, 0, 20, bird.rect.height*2))
+        self.rect = self.image.get_rect()
+        self.rect.centerx = bird.rect.centerx+50
+        self.rect.centery = bird.rect.centery
+        self.life = life
+        
+    def update(self):
+        """
+        防御シールドの残りライフ_lifeに応じてシールドの色を変更する
+        if self.life > 50:
+            pg.draw.rect(self.image, (0, 255, 0), pg.Rect(0, 0, 20, self.rect.height))
+        elif self.life > 0:
+            pg.draw.rect(self.image, (255, 255, 0), pg.Rect(0, 0, 20, self.rect.height))
+        else:
+            self.kill()
+        """
+        """
+        発動時間を1減算し、発動時間が0になったらシールドを消する
+        """
+        self.life -= 1
+        if self.life < 0:
+            self.kill()  # シールドを消す
 
 class Score:
     """
@@ -258,8 +288,9 @@ def main():
     bird = Bird(3, (900, 400))
     bombs = pg.sprite.Group()
     beams = pg.sprite.Group()
-    exps = pg.sprite.Group()
-    emys = pg.sprite.Group()
+    exps = pg.sprite.Group()  # 爆発グループ
+    emys = pg.sprite.Group()  # 敵機グループ
+    shields = pg.sprite.Group()  # 防御シールドグループ
 
     tmr = 0
     clock = pg.time.Clock()
@@ -270,6 +301,11 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_CAPSLOCK:
+                if score.score >= 50 and len(shields) == 0:  # スコアが50以上かつシールドがないとき
+                    shields.add(Shield(bird, 400))  # CAPSLOCKキーが押されたら防御シールドを生成
+                    score.score_up(-50)  # スコアを50減らす
+
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -295,6 +331,10 @@ def main():
             pg.display.update()
             time.sleep(2)
             return
+        
+        for bomb in pg.sprite.groupcollide(bombs, shields, True, False).keys():
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.score_up(1)  # 1点アップ
 
         bird.update(key_lst, screen)
         beams.update()
@@ -305,6 +345,8 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
+        shields.update()  # 防御シールドのアップデート
+        shields.draw(screen)  # 防御シールドを描画
         score.update(screen)
         pg.display.update()
         tmr += 1
